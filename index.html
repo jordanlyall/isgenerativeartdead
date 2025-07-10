@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Is Generative Art Dead?</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: #000;
+            cursor: crosshair;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .credit {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            font-family: monospace;
+            letter-spacing: 0.05em;
+            transition: color 0.3s ease;
+            z-index: 100;
+        }
+
+        .credit:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .refresh-hint {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 11px;
+            font-family: monospace;
+            letter-spacing: 0.05em;
+            opacity: 0;
+            animation: fadeIn 2s ease-in-out 3s forwards;
+            z-index: 100;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .credit {
+                font-size: 10px;
+                bottom: 15px;
+                right: 15px;
+            }
+            .refresh-hint {
+                font-size: 10px;
+                top: 15px;
+                right: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div class="refresh-hint">refresh for more</div>
+    <div class="credit">generative art lives</div>
+
+    <script>
+        // Global variables
+        let currentSketch;
+        let time = 0;
+        let mouseInfluence = { x: 0, y: 0 };
+
+        // Sketch 1: Minimalist Geometric
+        const minimalistSketch = (p) => {
+            let shapes = [];
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                p.angleMode(p.DEGREES);
+                
+                // Create geometric shapes
+                for (let i = 0; i < 5; i++) {
+                    shapes.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        size: p.random(50, 150),
+                        rotation: p.random(360),
+                        speed: p.random(0.1, 0.3)
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.background(245);
+                
+                // Draw floating shapes
+                p.push();
+                p.noFill();
+                p.strokeWeight(1);
+                shapes.forEach((shape, i) => {
+                    p.push();
+                    p.translate(shape.x, shape.y);
+                    p.rotate(shape.rotation);
+                    p.stroke(0, 50);
+                    if (i % 2 === 0) {
+                        p.rect(-shape.size/2, -shape.size/2, shape.size, shape.size);
+                    } else {
+                        p.ellipse(0, 0, shape.size);
+                    }
+                    p.pop();
+                    shape.rotation += shape.speed;
+                });
+                p.pop();
+                
+                // Draw "no" in center
+                p.push();
+                p.translate(p.width/2, p.height/2);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(p.min(p.width, p.height) * 0.3);
+                p.textFont('Arial');
+                p.fill(20);
+                p.noStroke();
+                p.text('no', 0, 0);
+                p.pop();
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        // Sketch 2: Organic Flow
+        const organicFlowSketch = (p) => {
+            let waves = [];
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                p.colorMode(p.HSB, 360, 100, 100, 100);
+                
+                for (let i = 0; i < 6; i++) {
+                    waves.push({
+                        offset: i * 60,
+                        amplitude: p.random(30, 80),
+                        frequency: p.random(0.001, 0.003),
+                        color: p.random(180, 240)
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.background(200, 10, 95);
+                
+                // Draw flowing waves
+                waves.forEach(wave => {
+                    p.push();
+                    p.noFill();
+                    p.strokeWeight(3);
+                    p.stroke(wave.color, 60, 80, 40);
+                    p.beginShape();
+                    for (let x = 0; x < p.width; x += 5) {
+                        let y = p.height/2 + p.sin((x + time + wave.offset) * wave.frequency) * wave.amplitude;
+                        p.vertex(x, y);
+                    }
+                    p.endShape();
+                    p.pop();
+                });
+                
+                // Draw "no" with organic feel
+                p.push();
+                p.translate(p.width/2, p.height/2);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(p.min(p.width, p.height) * 0.35);
+                p.textFont('Georgia');
+                p.fill(200, 80, 30);
+                p.noStroke();
+                let wobble = p.sin(time * 0.01) * 5;
+                p.rotate(wobble);
+                p.text('no', 0, 0);
+                p.pop();
+                
+                time += 2;
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        // Sketch 3: Glitch Digital
+        const glitchDigitalSketch = (p) => {
+            let glitchAmount = 0;
+            let textBuffer;
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                p.pixelDensity(1);
+                
+                // Create text buffer
+                textBuffer = p.createGraphics(p.width, p.height);
+                textBuffer.pixelDensity(1);
+            };
+
+            p.draw = () => {
+                p.background(0);
+                
+                // Update glitch amount
+                if (p.frameCount % 60 === 0) {
+                    glitchAmount = p.random(1) > 0.7 ? p.random(10, 30) : 0;
+                }
+                
+                // Draw text to buffer
+                textBuffer.clear();
+                textBuffer.push();
+                textBuffer.translate(textBuffer.width/2, textBuffer.height/2);
+                textBuffer.textAlign(p.CENTER, p.CENTER);
+                textBuffer.textSize(p.min(p.width, p.height) * 0.4);
+                textBuffer.textFont('Courier New');
+                textBuffer.fill(0, 255, 0);
+                textBuffer.noStroke();
+                textBuffer.text('no', 0, 0);
+                textBuffer.pop();
+                
+                // Apply glitch effect
+                p.image(textBuffer, 0, 0);
+                
+                if (glitchAmount > 0) {
+                    p.loadPixels();
+                    for (let i = 0; i < 5; i++) {
+                        let y = p.floor(p.random(p.height));
+                        let h = p.floor(p.random(1, glitchAmount));
+                        let xOffset = p.floor(p.random(-glitchAmount, glitchAmount));
+                        
+                        for (let x = 0; x < p.width; x++) {
+                            for (let dy = 0; dy < h; dy++) {
+                                let srcY = y + dy;
+                                let dstX = (x + xOffset + p.width) % p.width;
+                                
+                                if (srcY < p.height) {
+                                    let srcIndex = (srcY * p.width + x) * 4;
+                                    let dstIndex = (srcY * p.width + dstX) * 4;
+                                    
+                                    p.pixels[dstIndex] = p.pixels[srcIndex];
+                                    p.pixels[dstIndex + 1] = p.pixels[srcIndex + 1];
+                                    p.pixels[dstIndex + 2] = p.pixels[srcIndex + 2];
+                                }
+                            }
+                        }
+                    }
+                    p.updatePixels();
+                }
+                
+                // Scanlines
+                p.stroke(0, 50);
+                for (let y = 0; y < p.height; y += 3) {
+                    p.line(0, y, p.width, y);
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                textBuffer = p.createGraphics(p.width, p.height);
+            };
+        };
+
+        // Sketch 4: Particle System
+        const particleSystemSketch = (p) => {
+            let particles = [];
+            let attractors = [];
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                
+                // Create particles
+                for (let i = 0; i < 800; i++) {
+                    particles.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        vx: 0,
+                        vy: 0,
+                        size: p.random(1, 3)
+                    });
+                }
+                
+                // Create attractor points for "no"
+                createAttractors();
+            };
+
+            function createAttractors() {
+                attractors = [];
+                let centerX = p.width / 2;
+                let centerY = p.height / 2;
+                let scale = p.min(p.width, p.height) * 0.3;
+                
+                // "n" shape
+                for (let i = 0; i <= 20; i++) {
+                    attractors.push({ x: centerX - scale/2, y: centerY - scale/2 + (scale * i/20) });
+                    attractors.push({ x: centerX - scale/2 + (scale/3 * i/20), y: centerY - scale/2 + (scale * i/20) });
+                    attractors.push({ x: centerX - scale/6, y: centerY - scale/2 + (scale * i/20) });
+                }
+                
+                // "o" shape
+                for (let angle = 0; angle <= 360; angle += 10) {
+                    let x = centerX + scale/3 + p.cos(p.radians(angle)) * scale/4;
+                    let y = centerY + p.sin(p.radians(angle)) * scale/4;
+                    attractors.push({ x, y });
+                }
+            }
+
+            p.draw = () => {
+                p.background(20, 20, 30);
+                
+                // Update and draw particles
+                particles.forEach(particle => {
+                    // Find nearest attractor
+                    let minDist = Infinity;
+                    let nearest = null;
+                    
+                    attractors.forEach(attractor => {
+                        let d = p.dist(particle.x, particle.y, attractor.x, attractor.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            nearest = attractor;
+                        }
+                    });
+                    
+                    // Apply attraction
+                    if (nearest && minDist > 5) {
+                        let force = p.min(0.5, 50 / minDist);
+                        let angle = p.atan2(nearest.y - particle.y, nearest.x - particle.x);
+                        particle.vx += p.cos(angle) * force;
+                        particle.vy += p.sin(angle) * force;
+                    }
+                    
+                    // Apply friction
+                    particle.vx *= 0.95;
+                    particle.vy *= 0.95;
+                    
+                    // Update position
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    // Draw particle
+                    p.noStroke();
+                    p.fill(100, 200, 255, p.map(minDist, 0, 100, 255, 50));
+                    p.ellipse(particle.x, particle.y, particle.size);
+                });
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                createAttractors();
+            };
+        };
+
+        // Sketch 5: Kinetic Typography
+        const kineticTypographySketch = (p) => {
+            let letters = [];
+            let targetPositions = [];
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                
+                setupLetters();
+            };
+
+            function setupLetters() {
+                letters = [];
+                targetPositions = [];
+                
+                let fontSize = p.min(p.width, p.height) * 0.4;
+                let spacing = fontSize * 0.6;
+                
+                // "n" letter
+                letters.push({
+                    char: 'n',
+                    x: p.random(p.width),
+                    y: p.random(p.height),
+                    targetX: p.width/2 - spacing/2,
+                    targetY: p.height/2,
+                    rotation: p.random(360),
+                    targetRotation: 0,
+                    scale: p.random(0.5, 2),
+                    targetScale: 1
+                });
+                
+                // "o" letter
+                letters.push({
+                    char: 'o',
+                    x: p.random(p.width),
+                    y: p.random(p.height),
+                    targetX: p.width/2 + spacing/2,
+                    targetY: p.height/2,
+                    rotation: p.random(360),
+                    targetRotation: 0,
+                    scale: p.random(0.5, 2),
+                    targetScale: 1
+                });
+            }
+
+            p.draw = () => {
+                p.background(255, 240, 230);
+                
+                let fontSize = p.min(p.width, p.height) * 0.4;
+                
+                letters.forEach((letter, i) => {
+                    // Smooth interpolation
+                    letter.x = p.lerp(letter.x, letter.targetX, 0.08);
+                    letter.y = p.lerp(letter.y, letter.targetY, 0.08);
+                    letter.rotation = p.lerp(letter.rotation, letter.targetRotation, 0.08);
+                    letter.scale = p.lerp(letter.scale, letter.targetScale, 0.08);
+                    
+                    // Add some wobble when close to target
+                    let distToTarget = p.dist(letter.x, letter.y, letter.targetX, letter.targetY);
+                    if (distToTarget < 50) {
+                        letter.x += p.sin(time * 0.02 + i) * 2;
+                        letter.y += p.cos(time * 0.02 + i) * 2;
+                    }
+                    
+                    // Draw letter
+                    p.push();
+                    p.translate(letter.x, letter.y);
+                    p.rotate(p.radians(letter.rotation));
+                    p.scale(letter.scale);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.textSize(fontSize);
+                    p.textFont('Helvetica');
+                    p.fill(30, 30, 40);
+                    p.text(letter.char, 0, 0);
+                    p.pop();
+                });
+                
+                time++;
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                setupLetters();
+            };
+
+            p.mousePressed = () => {
+                letters.forEach(letter => {
+                    letter.x = p.mouseX;
+                    letter.y = p.mouseY;
+                    letter.rotation = p.random(360);
+                    letter.scale = p.random(0.5, 2);
+                });
+            };
+        };
+
+        // Sketch 6: Color Field Abstract
+        const colorFieldSketch = (p) => {
+            let colorShift = 0;
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                p.colorMode(p.HSB, 360, 100, 100);
+            };
+
+            p.draw = () => {
+                // Create gradient background
+                for (let y = 0; y <= p.height; y++) {
+                    let inter = p.map(y, 0, p.height, 0, 1);
+                    let hue = (colorShift + inter * 60) % 360;
+                    p.stroke(hue, 70, 90);
+                    p.line(0, y, p.width, y);
+                }
+                
+                // Draw overlapping color fields
+                p.push();
+                p.blendMode(p.MULTIPLY);
+                p.noStroke();
+                
+                // Field 1
+                p.fill((colorShift + 180) % 360, 40, 80, 30);
+                p.ellipse(p.width * 0.3, p.height * 0.4, p.width * 0.6);
+                
+                // Field 2
+                p.fill((colorShift + 90) % 360, 50, 70, 30);
+                p.rect(p.width * 0.4, p.height * 0.2, p.width * 0.4, p.height * 0.6);
+                
+                p.pop();
+                
+                // Draw "no" text
+                p.push();
+                p.blendMode(p.NORMAL);
+                p.translate(p.width/2, p.height/2);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(p.min(p.width, p.height) * 0.35);
+                p.textFont('Times New Roman');
+                p.fill(0, 0, 100);
+                p.noStroke();
+                
+                // Add subtle shadow
+                p.push();
+                p.fill(0, 0, 0, 20);
+                p.text('no', 3, 3);
+                p.pop();
+                
+                p.text('no', 0, 0);
+                p.pop();
+                
+                colorShift += 0.2;
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        // Sketch 7: Mathematical Patterns
+        const mathematicalPatternSketch = (p) => {
+            let phase = 0;
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+                p.angleMode(p.RADIANS);
+            };
+
+            p.draw = () => {
+                p.background(10, 10, 20);
+                
+                // Draw spiraling patterns
+                p.push();
+                p.translate(p.width/2, p.height/2);
+                p.noFill();
+                
+                for (let i = 0; i < 200; i++) {
+                    let angle = i * 0.1 + phase;
+                    let radius = i * 2;
+                    let x = p.cos(angle) * radius;
+                    let y = p.sin(angle) * radius;
+                    
+                    p.stroke(150, 100, 255, p.map(i, 0, 200, 100, 10));
+                    p.strokeWeight(p.map(i, 0, 200, 3, 0.5));
+                    p.point(x, y);
+                    
+                    // Secondary spiral
+                    let x2 = p.cos(angle * 1.5) * radius * 0.7;
+                    let y2 = p.sin(angle * 1.5) * radius * 0.7;
+                    p.stroke(255, 100, 150, p.map(i, 0, 200, 100, 10));
+                    p.point(x2, y2);
+                }
+                p.pop();
+                
+                // Draw "no" with mathematical precision
+                p.push();
+                p.translate(p.width/2, p.height/2);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(p.min(p.width, p.height) * 0.3);
+                p.textFont('Courier New');
+                p.fill(255);
+                p.noStroke();
+                
+                // Apply wave distortion
+                let distortedText = '';
+                for (let i = 0; i < 2; i++) {
+                    let char = i === 0 ? 'n' : 'o';
+                    let yOffset = p.sin(phase * 2 + i) * 10;
+                    p.push();
+                    p.translate(i === 0 ? -50 : 50, yOffset);
+                    p.text(char, 0, 0);
+                    p.pop();
+                }
+                
+                p.pop();
+                
+                phase += 0.01;
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        // Sketch 8: Neon Synthwave
+        const neonSynthwaveSketch = (p) => {
+            let gridOffset = 0;
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('canvas-container');
+            };
+
+            p.draw = () => {
+                // Dark background
+                p.background(10, 0, 20);
+                
+                // Draw perspective grid
+                p.push();
+                p.stroke(255, 0, 255, 50);
+                p.strokeWeight(1);
+                
+                // Horizontal lines
+                for (let y = p.height/2; y < p.height; y += 20) {
+                    let perspective = p.map(y, p.height/2, p.height, 0, 1);
+                    p.stroke(255, 0, 255, 50 * (1 - perspective));
+                    p.line(0, y, p.width, y);
+                }
+                
+                // Vertical lines with perspective
+                let centerX = p.width/2;
+                for (let x = -20; x <= 20; x++) {
+                    p.stroke(0, 255, 255, 30);
+                    p.line(
+                        centerX + x * 40, 
+                        p.height/2, 
+                        centerX + x * 100, 
+                        p.height
+                    );
+                }
+                p.pop();
+                
+                // Draw glowing "no"
+                p.push();
+                p.translate(p.width/2, p.height/2);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(p.min(p.width, p.height) * 0.4);
+                p.textFont('Arial Black');
+                
+                // Multiple glow layers
+                for (let i = 5; i > 0; i--) {
+                    let alpha = p.map(i, 0, 5, 255, 50);
+                    let blur = p.map(i, 0, 5, 0, 20);
+                    p.fill(255, 0, 255, alpha/3);
+                    p.noStroke();
+                    p.drawingContext.shadowBlur = blur;
+                    p.drawingContext.shadowColor = 'rgb(255, 0, 255)';
+                    p.text('no', 0, 0);
+                }
+                
+                // Main text
+                p.fill(255, 200, 255);
+                p.noStroke();
+                p.drawingContext.shadowBlur = 20;
+                p.drawingContext.shadowColor = 'rgb(0, 255, 255)';
+                p.text('no', 0, 0);
+                
+                // Inner highlight
+                p.fill(255);
+                p.drawingContext.shadowBlur = 0;
+                p.textSize(p.min(p.width, p.height) * 0.38);
+                p.text('no', 0, 0);
+                
+                p.pop();
+                
+                gridOffset += 1;
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        // Array of all sketches
+        const artStyles = [
+            { name: 'minimalist', sketch: minimalistSketch },
+            { name: 'organicFlow', sketch: organicFlowSketch },
+            { name: 'glitchDigital', sketch: glitchDigitalSketch },
+            { name: 'particleSystem', sketch: particleSystemSketch },
+            { name: 'kineticTypography', sketch: kineticTypographySketch },
+            { name: 'colorField', sketch: colorFieldSketch },
+            { name: 'mathematicalPattern', sketch: mathematicalPatternSketch },
+            { name: 'neonSynthwave', sketch: neonSynthwaveSketch }
+        ];
+
+        // Initialize with random sketch
+        window.addEventListener('DOMContentLoaded', () => {
+            const randomStyle = artStyles[Math.floor(Math.random() * artStyles.length)];
+            currentSketch = new p5(randomStyle.sketch);
+            
+            // Track mouse for interactive effects
+            document.addEventListener('mousemove', (e) => {
+                mouseInfluence.x = e.clientX / window.innerWidth;
+                mouseInfluence.y = e.clientY / window.innerHeight;
+            });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (currentSketch) {
+                currentSketch.windowResized();
+            }
+        });
+    </script>
+</body>
+</html>
