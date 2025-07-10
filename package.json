@@ -1,0 +1,15 @@
+{
+  "name": "isgenerativeartdead",
+  "version": "1.0.0",
+  "description": "Is Generative Art Dead? - A visual answer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
