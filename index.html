@@ -93,42 +93,43 @@
             let textColor;
             let strokeWeight;
             let selectedFont;
+            let scheme;
             
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('canvas-container');
                 p.angleMode(p.DEGREES);
                 
-                // Random color scheme
-                let scheme = p.random(['light', 'dark', 'contrast']);
+                // Random color scheme with guaranteed contrast
+                scheme = p.random(['light', 'dark', 'contrast']);
                 if (scheme === 'light') {
                     bgColor = p.color(p.random(240, 255));
-                    shapeColor = p.color(0, p.random(20, 60));
+                    shapeColor = p.color(0, p.random(40, 80)); // Increased opacity for visibility
                     textColor = p.color(p.random(20, 40));
                 } else if (scheme === 'dark') {
                     bgColor = p.color(p.random(10, 30));
-                    shapeColor = p.color(255, p.random(20, 60));
+                    shapeColor = p.color(255, p.random(40, 80)); // Increased opacity for visibility
                     textColor = p.color(p.random(220, 255));
                 } else {
                     bgColor = p.random() > 0.5 ? p.color(255) : p.color(0);
-                    shapeColor = bgColor.levels[0] > 128 ? p.color(0, 40) : p.color(255, 40);
+                    shapeColor = bgColor.levels[0] > 128 ? p.color(0, 60) : p.color(255, 60); // Increased opacity
                     textColor = bgColor.levels[0] > 128 ? p.color(0) : p.color(255);
                 }
                 
-                strokeWeight = p.random([0.5, 1, 2, 3]);
+                strokeWeight = p.random([1, 1.5, 2, 3]);
                 selectedFont = p.random(['Arial', 'Helvetica']);
                 
-                // Create geometric shapes with more variety
-                let shapeCount = p.random(3, 8);
+                // Create geometric shapes with more variety and better visibility
+                let shapeCount = p.random(4, 10);
                 for (let i = 0; i < shapeCount; i++) {
                     shapes.push({
                         x: p.random(p.width),
                         y: p.random(p.height),
-                        size: p.random(30, 200),
+                        size: p.random(50, 250), // Increased minimum size
                         rotation: p.random(360),
                         speed: p.random(-0.5, 0.5),
-                        type: p.random(['rect', 'ellipse', 'triangle', 'line']),
-                        strokePattern: p.random(['solid', 'dashed'])
+                        type: p.random(['rect', 'ellipse', 'triangle', 'line', 'hexagon']),
+                        strokePattern: p.random(['solid', 'dashed', 'dotted'])
                     });
                 }
             };
@@ -136,7 +137,7 @@
             p.draw = () => {
                 p.background(bgColor);
                 
-                // Draw floating shapes
+                // Draw floating shapes with better visibility
                 p.push();
                 p.noFill();
                 p.strokeWeight(strokeWeight);
@@ -144,10 +145,14 @@
                     p.push();
                     p.translate(shape.x, shape.y);
                     p.rotate(shape.rotation);
+                    
+                    // Main shape with primary color
                     p.stroke(shapeColor);
                     
                     if (shape.strokePattern === 'dashed') {
                         p.drawingContext.setLineDash([5, 5]);
+                    } else if (shape.strokePattern === 'dotted') {
+                        p.drawingContext.setLineDash([2, 4]);
                     }
                     
                     switch(shape.type) {
@@ -162,7 +167,46 @@
                             break;
                         case 'line':
                             p.line(-shape.size/2, 0, shape.size/2, 0);
+                            // Add perpendicular line for cross
+                            if (p.random() > 0.5) {
+                                p.line(0, -shape.size/4, 0, shape.size/4);
+                            }
                             break;
+                        case 'hexagon':
+                            p.beginShape();
+                            for (let a = 0; a < p.TWO_PI; a += p.TWO_PI / 6) {
+                                let x = p.cos(a) * shape.size/2;
+                                let y = p.sin(a) * shape.size/2;
+                                p.vertex(x, y);
+                            }
+                            p.endShape(p.CLOSE);
+                            break;
+                    }
+                    
+                    // Add subtle double-line effect for better visibility
+                    if (scheme === 'light' && shape.type !== 'line') {
+                        p.stroke(0, 10);
+                        p.strokeWeight(strokeWeight + 1);
+                        switch(shape.type) {
+                            case 'rect':
+                                p.rect(-shape.size/2, -shape.size/2, shape.size, shape.size);
+                                break;
+                            case 'ellipse':
+                                p.ellipse(0, 0, shape.size);
+                                break;
+                            case 'triangle':
+                                p.triangle(0, -shape.size/2, -shape.size/2, shape.size/2, shape.size/2, shape.size/2);
+                                break;
+                            case 'hexagon':
+                                p.beginShape();
+                                for (let a = 0; a < p.TWO_PI; a += p.TWO_PI / 6) {
+                                    let x = p.cos(a) * shape.size/2;
+                                    let y = p.sin(a) * shape.size/2;
+                                    p.vertex(x, y);
+                                }
+                                p.endShape(p.CLOSE);
+                                break;
+                        }
                     }
                     
                     p.drawingContext.setLineDash([]);
@@ -189,6 +233,9 @@
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
+                // Update sun position and size for new dimensions
+                sunY = p.height * 0.3;
+                sunSize = p.min(p.width, p.height) * 0.2;
             };
         };
 
@@ -237,23 +284,23 @@
                         amplitude: p.random(20, 100),
                         frequency: p.random(0.0005, 0.004),
                         color: p.random(colorPalette),
-                        thickness: p.random(1, 5),
-                        opacity: p.random(20, 60),
+                        thickness: p.random(2, 6), // Increased minimum thickness
+                        opacity: p.random(40, 80), // Increased minimum opacity
                         speed: p.random(1, 3)
                     });
                 }
             };
 
             p.draw = () => {
-                // Dynamic background
-                p.background(bgHue, p.random(5, 15), p.random(85, 95));
+                // Stable background
+                p.background(bgHue, 10, 90);
                 
                 // Draw flowing waves based on direction
                 waves.forEach(wave => {
                     p.push();
                     p.noFill();
                     p.strokeWeight(wave.thickness);
-                    p.stroke(wave.color, p.random(50, 70), p.random(70, 90), wave.opacity);
+                    p.stroke(wave.color, 70, 85, wave.opacity);
                     p.beginShape();
                     
                     if (flowDirection === 'horizontal') {
@@ -292,12 +339,19 @@
                 
                 // Text with organic color from palette
                 let textColor = colorPalette[Math.floor(colorPalette.length/2)];
-                p.fill(textColor, 70, 30);
+                
+                // Subtle shadow for better visibility
+                p.fill(0, 0, 0, 30);
+                p.noStroke();
+                p.text('no', 3, 3);
+                
+                // Main text
+                p.fill(textColor, 80, 25);
                 p.noStroke();
                 
                 // Very subtle organic wobble
-                let wobbleX = p.sin(time * 0.005) * 2;
-                let wobbleY = p.cos(time * 0.007) * 2;
+                let wobbleX = p.sin(time * 0.002) * 1;
+                let wobbleY = p.cos(time * 0.003) * 1;
                 
                 p.text('no', wobbleX, wobbleY);
                 p.pop();
@@ -341,7 +395,7 @@
                         bgColor = p.color(20, 0, 40);
                         break;
                     case 'terminal':
-                        glitchColor = p.color(255, 140, 0);
+                        glitchColor = p.color(255, 160, 0); // Brighter orange
                         bgColor = p.color(20, 10, 0);
                         break;
                 }
@@ -358,9 +412,9 @@
             p.draw = () => {
                 p.background(bgColor);
                 
-                // Random glitch triggers
-                if (p.frameCount % p.random(30, 90) === 0) {
-                    glitchAmount = p.random(1) > 0.6 ? p.random(5, 50) : 0;
+                // Less frequent, gentler glitch triggers
+                if (p.frameCount % 120 === 0) {
+                    glitchAmount = p.random(1) > 0.7 ? p.random(5, 20) : 0;
                 }
                 
                 // Draw text to buffer - stable and consistent
@@ -376,8 +430,8 @@
                 // Add subtle digital ghost effect
                 if (p.random() > 0.8) {
                     textBuffer.push();
-                    textBuffer.fill(glitchColor.levels[0], glitchColor.levels[1], glitchColor.levels[2], 50);
-                    textBuffer.text('no', 2, 2);
+                    textBuffer.fill(glitchColor.levels[0], glitchColor.levels[1], glitchColor.levels[2], 80);
+                    textBuffer.text('no', 3, 3);
                     textBuffer.pop();
                 }
                 
@@ -392,10 +446,10 @@
                     
                     switch(glitchStyle) {
                         case 'horizontal':
-                            for (let i = 0; i < 10; i++) {
+                            for (let i = 0; i < 3; i++) {
                                 let y = p.floor(p.random(p.height));
                                 let h = p.floor(p.random(1, glitchAmount));
-                                let xOffset = p.floor(p.random(-glitchAmount * 2, glitchAmount * 2));
+                                let xOffset = p.floor(p.random(-glitchAmount, glitchAmount));
                                 
                                 for (let x = 0; x < p.width; x++) {
                                     for (let dy = 0; dy < h; dy++) {
@@ -416,8 +470,8 @@
                             break;
                             
                         case 'blocks':
-                            for (let i = 0; i < 20; i++) {
-                                let blockSize = p.random(10, 50);
+                            for (let i = 0; i < 5; i++) {
+                                let blockSize = p.random(10, 30);
                                 let x = p.floor(p.random(p.width - blockSize));
                                 let y = p.floor(p.random(p.height - blockSize));
                                 let destX = p.floor(p.random(p.width - blockSize));
@@ -442,17 +496,16 @@
                     p.updatePixels();
                 }
                 
-                // Variable scanlines
-                p.stroke(0, scanlineIntensity);
-                let scanlineSpacing = p.random([2, 3, 4]);
-                for (let y = 0; y < p.height; y += scanlineSpacing) {
+                // Subtle static scanlines
+                p.stroke(0, 20);
+                for (let y = 0; y < p.height; y += 4) {
                     p.line(0, y, p.width, y);
                 }
                 
-                // Random interference
-                if (p.random() > 0.95) {
+                // Rare, subtle interference
+                if (p.random() > 0.98) {
                     p.fill(glitchColor.levels[0], glitchColor.levels[1], glitchColor.levels[2], 30);
-                    p.rect(0, p.random(p.height), p.width, p.random(5, 50));
+                    p.rect(0, p.random(p.height), p.width, 3);
                 }
             };
 
@@ -495,7 +548,7 @@
                         break;
                     case 'atoms':
                         bgColor = p.color(240, 240, 245);
-                        particleColor = () => p.color(p.random(0, 100), p.random(50, 150), p.random(200, 255));
+                        particleColor = () => p.color(p.random(20, 100), p.random(50, 150), p.random(180, 220));
                         particleCount = p.random(400, 800);
                         attractionStrength = 0.8;
                         particleStyle = 'orbit';
@@ -567,10 +620,8 @@
             }
 
             p.draw = () => {
-                // Dynamic background fade
-                p.fill(bgColor.levels[0], bgColor.levels[1], bgColor.levels[2], 25);
-                p.noStroke();
-                p.rect(0, 0, p.width, p.height);
+                // Stable dark background
+                p.background(bgColor);
                 
                 // Update and draw particles
                 particles.forEach((particle, index) => {
@@ -744,8 +795,8 @@
                 
                 // Draw connecting lines sometimes
                 if (animationStyle === 'magnetic' && letters.length > 1) {
-                    p.strokeWeight(1);
-                    p.stroke(colorScheme.accent[0], colorScheme.accent[1], colorScheme.accent[2], 30);
+                    p.strokeWeight(2);
+                    p.stroke(colorScheme.accent[0], colorScheme.accent[1], colorScheme.accent[2], 50);
                     p.line(letters[0].x, letters[0].y, letters[1].x, letters[1].y);
                 }
                 
@@ -815,13 +866,13 @@
                     
                     // Draw subtle shadow
                     p.push();
-                    p.translate(letter.x + 2, letter.y + 2);
+                    p.translate(letter.x + 3, letter.y + 3);
                     p.rotate(p.radians(letter.rotation));
                     p.scale(letter.scale);
                     p.textAlign(p.CENTER, p.CENTER);
                     p.textSize(fontSize);
                     p.textFont(selectedFont);
-                    p.fill(0, 0, 0, 20);
+                    p.fill(0, 0, 0, 40);
                     p.noStroke();
                     p.text(letter.char, 0, 0);
                     p.pop();
@@ -914,9 +965,10 @@
                         break;
                 }
                 
-                // Create random color fields
+                // Create random color fields with better contrast
                 let fieldCount = p.random(2, 6);
                 for (let i = 0; i < fieldCount; i++) {
+                    let opacity = composition === 'layered' ? p.random(30, 70) : p.random(40, 80);
                     fields.push({
                         x: p.random(p.width),
                         y: p.random(p.height),
@@ -925,7 +977,7 @@
                         hue: (palette.base + p.random(-palette.range/2, palette.range/2) + 360) % 360,
                         saturation: p.random(palette.saturation[0], palette.saturation[1]),
                         brightness: p.random(palette.brightness[0], palette.brightness[1]),
-                        opacity: p.random(20, 60),
+                        opacity: opacity,
                         rotation: p.random(-45, 45),
                         shape: p.random(['rect', 'ellipse', 'gradient'])
                     });
@@ -937,7 +989,7 @@
                 for (let y = 0; y <= p.height; y += 2) {
                     let inter = p.map(y, 0, p.height, 0, 1);
                     let hue = (palette.base + colorShift + inter * 30) % 360;
-                    p.stroke(hue, 20, 90);
+                    p.stroke(hue, 25, 85);
                     p.strokeWeight(2);
                     p.line(0, y, p.width, y);
                 }
@@ -991,14 +1043,13 @@
                     });
                 } else { // blur
                     // Richter-style blurred stripes
-                    p.filter(p.BLUR, 3);
                     let stripeHeight = p.height / fields.length;
                     fields.forEach((field, i) => {
                         p.noStroke();
                         p.fill(field.hue, field.saturation, field.brightness);
                         p.rect(0, i * stripeHeight, p.width, stripeHeight);
                     });
-                    p.filter(p.BLUR, 5);
+                    p.filter(p.BLUR, 3);
                 }
                 
                 p.pop();
@@ -1027,15 +1078,25 @@
                 // Add subtle shadow for depth
                 if (composition !== 'grid') {
                     p.push();
-                    p.fill(0, 0, 0, 15);
-                    p.text('no', 2, 2);
+                    p.fill(0, 0, 0, 25);
+                    p.text('no', 4, 4);
+                    p.pop();
+                }
+                
+                // Very subtle outline for light backgrounds
+                if (avgBrightness > 85) {
+                    p.push();
+                    p.noFill();
+                    p.stroke(0, 0, 0, 40);
+                    p.strokeWeight(1.5);
+                    p.text('no', 0, 0);
                     p.pop();
                 }
                 
                 p.text('no', 0, 0);
                 p.pop();
                 
-                colorShift += 0.3;
+                colorShift += 0.1;
             };
 
             p.windowResized = () => {
@@ -1051,202 +1112,357 @@
             };
         };
 
-        // Sketch 7: Mathematical Patterns
+        // Sketch 7: Mathematical Patterns - "Harmonic Resonance"
         const mathematicalPatternSketch = (p) => {
             let phase = 0;
-            let formula;
-            let colorScheme;
-            let patternType;
-            let parameters;
+            let palette;
+            let composition;
+            let noiseField = [];
+            let goldenRatio = 1.618033988749;
+            let traits;
             
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('canvas-container');
                 p.angleMode(p.RADIANS);
                 
-                // Random mathematical pattern type
-                patternType = p.random(['spiral', 'lissajous', 'fractal', 'wave', 'polar']);
-                
-                // Random parameters for formulas
-                parameters = {
-                    a: p.random(1, 5),
-                    b: p.random(1, 5),
-                    c: p.random(0.5, 2),
-                    d: p.random(0.5, 2),
-                    n: p.floor(p.random(3, 8)),
-                    m: p.floor(p.random(2, 6))
+                // Generate artistic traits (like Art Blocks pieces)
+                traits = {
+                    // Core mathematical parameters
+                    frequency: p.random(2, 8),
+                    amplitude: p.random(0.3, 0.7),
+                    complexity: p.floor(p.random(3, 9)),
+                    symmetry: p.random(['radial', 'bilateral', 'translational', 'none']),
+                    
+                    // Compositional parameters
+                    density: p.random(0.4, 0.9),
+                    scale: p.random(0.5, 1.5),
+                    rotation: p.random(p.TWO_PI),
+                    
+                    // Artistic parameters
+                    strokeStyle: p.random(['delicate', 'bold', 'varied']),
+                    flowField: p.random() > 0.5,
+                    layers: p.floor(p.random(3, 7))
                 };
                 
-                // Color schemes
-                let schemes = [
-                    { bg: [10, 10, 20], primary: [150, 100, 255], secondary: [255, 100, 150] },
-                    { bg: [240, 240, 245], primary: [50, 100, 200], secondary: [200, 50, 100] },
-                    { bg: [20, 0, 30], primary: [0, 255, 200], secondary: [255, 200, 0] },
-                    { bg: [250, 245, 240], primary: [100, 50, 150], secondary: [200, 100, 50] }
-                ];
-                colorScheme = p.random(schemes);
+                // Sophisticated color palettes inspired by art history
+                let paletteType = p.random(['monet', 'rothko', 'richter', 'klee', 'kandinsky']);
+                generatePalette(paletteType);
+                
+                // Initialize noise field for organic variations
+                p.noiseSeed(p.random(10000));
+                for (let i = 0; i < 10; i++) {
+                    noiseField.push(p.random(1000));
+                }
             };
+            
+            function generatePalette(type) {
+                switch(type) {
+                    case 'monet':
+                        // Impressionist water lilies palette
+                        palette = {
+                            bg: p.color(245, 242, 237),
+                            colors: [
+                                p.color(67, 97, 113, 180),
+                                p.color(146, 168, 172, 180),
+                                p.color(216, 219, 196, 180),
+                                p.color(157, 129, 137, 180),
+                                p.color(95, 119, 124, 180)
+                            ],
+                            accent: p.color(204, 126, 163, 200)
+                        };
+                        break;
+                        
+                    case 'rothko':
+                        // Color field emotional palette
+                        palette = {
+                            bg: p.color(35, 31, 32),
+                            colors: [
+                                p.color(140, 46, 49, 150),
+                                p.color(198, 83, 62, 150),
+                                p.color(64, 41, 54, 150),
+                                p.color(89, 60, 72, 150)
+                            ],
+                            accent: p.color(217, 160, 102, 180)
+                        };
+                        break;
+                        
+                    case 'richter':
+                        // Contemporary abstract palette
+                        palette = {
+                            bg: p.color(250, 250, 245),
+                            colors: [
+                                p.color(45, 45, 45, 120),
+                                p.color(230, 0, 18, 120),
+                                p.color(251, 176, 59, 120),
+                                p.color(36, 107, 206, 120),
+                                p.color(80, 80, 80, 120)
+                            ],
+                            accent: p.color(255, 255, 255, 200)
+                        };
+                        break;
+                        
+                    case 'klee':
+                        // Bauhaus geometric palette
+                        palette = {
+                            bg: p.color(242, 234, 214),
+                            colors: [
+                                p.color(193, 51, 47, 160),
+                                p.color(237, 177, 88, 160),
+                                p.color(59, 93, 124, 160),
+                                p.color(122, 148, 128, 160)
+                            ],
+                            accent: p.color(38, 38, 38, 200)
+                        };
+                        break;
+                        
+                    case 'kandinsky':
+                        // Spiritual abstract palette
+                        palette = {
+                            bg: p.color(236, 228, 212),
+                            colors: [
+                                p.color(216, 71, 39, 140),
+                                p.color(38, 83, 122, 140),
+                                p.color(235, 196, 74, 140),
+                                p.color(47, 44, 42, 140),
+                                p.color(163, 51, 39, 140)
+                            ],
+                            accent: p.color(255, 255, 255, 180)
+                        };
+                        break;
+                }
+            }
 
             p.draw = () => {
-                // Gradient background
-                for (let y = 0; y <= p.height; y += 2) {
-                    let inter = p.map(y, 0, p.height, 0, 1);
-                    let r = p.lerp(colorScheme.bg[0], colorScheme.bg[0] * 0.8, inter);
-                    let g = p.lerp(colorScheme.bg[1], colorScheme.bg[1] * 0.8, inter);
-                    let b = p.lerp(colorScheme.bg[2], colorScheme.bg[2] * 0.8, inter);
+                // Sophisticated gradient background
+                drawArtisticBackground();
+                
+                // Main composition using golden ratio positioning
+                p.push();
+                let centerX = p.width / goldenRatio;
+                let centerY = p.height / goldenRatio;
+                p.translate(centerX, centerY);
+                p.rotate(traits.rotation);
+                
+                // Layer multiple mathematical forms
+                for (let layer = 0; layer < traits.layers; layer++) {
+                    p.push();
+                    let layerScale = p.map(layer, 0, traits.layers, 1, 0.3);
+                    p.scale(layerScale * traits.scale);
+                    
+                    drawHarmonicForm(layer);
+                    p.pop();
+                }
+                
+                p.pop();
+                
+                // Add compositional elements
+                if (traits.flowField) {
+                    drawFlowField();
+                }
+                
+                // Draw "no" with artistic integration
+                drawArtisticText();
+                
+                phase += 0.003;
+            };
+            
+            function drawArtisticBackground() {
+                // Create subtle gradient with noise
+                let baseR = p.red(palette.bg);
+                let baseG = p.green(palette.bg);
+                let baseB = p.blue(palette.bg);
+                
+                for (let y = 0; y < p.height; y += 2) {
+                    let inter = y / p.height;
+                    let noiseVal = p.noise(y * 0.002, phase) * 0.1;
+                    
+                    // Ensure gradient doesn't wash out to pure white
+                    let maxBrightness = p.brightness(palette.bg) > 80 ? 0.95 : 0.9;
+                    let r = baseR * (maxBrightness - inter * 0.1 + noiseVal);
+                    let g = baseG * (maxBrightness - inter * 0.1 + noiseVal);
+                    let b = baseB * (maxBrightness - inter * 0.1 + noiseVal);
+                    
                     p.stroke(r, g, b);
                     p.strokeWeight(2);
                     p.line(0, y, p.width, y);
                 }
+            }
+            
+            function drawHarmonicForm(layer) {
+                p.noFill();
                 
-                // Draw mathematical patterns
-                p.push();
-                p.translate(p.width/2, p.height/2);
+                // Complex harmonic oscillator
+                let points = [];
+                let numPoints = traits.complexity * 50;
                 
-                switch(patternType) {
-                    case 'spiral':
-                        // Logarithmic spiral with multiple arms
-                        p.noFill();
-                        for (let arm = 0; arm < parameters.n; arm++) {
-                            p.push();
-                            p.rotate((p.TWO_PI / parameters.n) * arm);
-                            p.beginShape();
-                            for (let i = 0; i < 300; i++) {
-                                let angle = i * 0.1 + phase;
-                                let radius = parameters.a * p.exp(parameters.b * angle * 0.1);
-                                let x = p.cos(angle) * radius;
-                                let y = p.sin(angle) * radius;
-                                
-                                let alpha = p.map(i, 0, 300, 150, 10);
-                                p.stroke(colorScheme.primary[0], colorScheme.primary[1], colorScheme.primary[2], alpha);
-                                p.strokeWeight(p.map(i, 0, 300, 3, 0.5));
-                                p.vertex(x, y);
-                            }
-                            p.endShape();
-                            p.pop();
-                        }
-                        break;
-                        
-                    case 'lissajous':
-                        // Lissajous curves
-                        p.noFill();
-                        for (let offset = 0; offset < 5; offset++) {
-                            p.beginShape();
-                            for (let t = 0; t < p.TWO_PI; t += 0.01) {
-                                let x = p.sin(parameters.a * t + phase + offset * 0.5) * 150;
-                                let y = p.sin(parameters.b * t) * 150;
-                                
-                                let color = offset % 2 === 0 ? colorScheme.primary : colorScheme.secondary;
-                                p.stroke(color[0], color[1], color[2], 100);
-                                p.strokeWeight(2);
-                                p.vertex(x, y);
-                            }
-                            p.endShape();
-                        }
-                        break;
-                        
-                    case 'fractal':
-                        // Recursive tree pattern
-                        p.stroke(colorScheme.primary[0], colorScheme.primary[1], colorScheme.primary[2]);
-                        function drawBranch(len, depth) {
-                            if (depth < 1) return;
-                            
-                            p.strokeWeight(depth);
-                            p.line(0, 0, 0, -len);
-                            p.translate(0, -len);
-                            
-                            p.push();
-                            p.rotate(p.sin(phase) * 0.2 + parameters.c);
-                            drawBranch(len * 0.7, depth - 1);
-                            p.pop();
-                            
-                            p.push();
-                            p.rotate(-p.sin(phase) * 0.2 - parameters.c);
-                            drawBranch(len * 0.7, depth - 1);
-                            p.pop();
-                        }
-                        
-                        for (let i = 0; i < parameters.n; i++) {
-                            p.push();
-                            p.rotate((p.TWO_PI / parameters.n) * i);
-                            drawBranch(80, 6);
-                            p.pop();
-                        }
-                        break;
-                        
-                    case 'wave':
-                        // Complex wave interference
-                        p.noFill();
-                        for (let ring = 0; ring < 10; ring++) {
-                            p.beginShape();
-                            for (let angle = 0; angle <= p.TWO_PI; angle += 0.05) {
-                                let r = 50 + ring * 20;
-                                r += p.sin(angle * parameters.a + phase) * 10;
-                                r += p.cos(angle * parameters.b + phase * 2) * 5;
-                                
-                                let x = p.cos(angle) * r;
-                                let y = p.sin(angle) * r;
-                                
-                                let alpha = p.map(ring, 0, 10, 150, 30);
-                                p.stroke(colorScheme.primary[0], colorScheme.primary[1], colorScheme.primary[2], alpha);
-                                p.strokeWeight(2);
-                                p.vertex(x, y);
-                            }
-                            p.endShape(p.CLOSE);
-                        }
-                        break;
-                        
-                    case 'polar':
-                        // Polar rose pattern
-                        p.noFill();
-                        for (let layer = 0; layer < 3; layer++) {
-                            p.beginShape();
-                            for (let angle = 0; angle <= p.TWO_PI * parameters.m; angle += 0.01) {
-                                let r = 100 * p.sin(parameters.n * angle + phase + layer);
-                                let x = r * p.cos(angle);
-                                let y = r * p.sin(angle);
-                                
-                                let color = layer === 1 ? colorScheme.secondary : colorScheme.primary;
-                                p.stroke(color[0], color[1], color[2], 80);
-                                p.strokeWeight(2 - layer * 0.5);
-                                p.vertex(x, y);
-                            }
-                            p.endShape();
-                        }
-                        break;
+                for (let i = 0; i < numPoints; i++) {
+                    let t = p.map(i, 0, numPoints, 0, p.TWO_PI * traits.frequency);
+                    
+                    // Multi-frequency harmonic motion
+                    let x = 0;
+                    let y = 0;
+                    
+                    for (let h = 1; h <= traits.complexity; h++) {
+                        let harmonic = 1 / h;
+                        x += p.sin(t * h + phase * h + noiseField[h % 10]) * 100 * harmonic * traits.amplitude;
+                        y += p.cos(t * h * goldenRatio + phase * h + noiseField[(h + 5) % 10]) * 100 * harmonic * traits.amplitude;
+                    }
+                    
+                    // Add organic variation
+                    let noiseScale = 0.01;
+                    x += p.noise(t * noiseScale, phase, layer) * 50 - 25;
+                    y += p.noise(t * noiseScale, phase + 100, layer) * 50 - 25;
+                    
+                    points.push({x, y, t});
                 }
                 
-                p.pop();
+                // Apply symmetry transformations
+                drawWithSymmetry(points, layer);
+            }
+            
+            function drawWithSymmetry(points, layer) {
+                let colorIndex = layer % palette.colors.length;
+                let baseColor = palette.colors[colorIndex];
                 
-                // Draw "no" with clean mathematical styling
+                switch(traits.symmetry) {
+                    case 'radial':
+                        let segments = traits.complexity;
+                        for (let s = 0; s < segments; s++) {
+                            p.push();
+                            p.rotate(p.TWO_PI / segments * s);
+                            drawCurve(points, baseColor, layer);
+                            p.pop();
+                        }
+                        break;
+                        
+                    case 'bilateral':
+                        drawCurve(points, baseColor, layer);
+                        p.push();
+                        p.scale(-1, 1);
+                        drawCurve(points, baseColor, layer);
+                        p.pop();
+                        break;
+                        
+                    case 'translational':
+                        for (let tx = -1; tx <= 1; tx++) {
+                            for (let ty = -1; ty <= 1; ty++) {
+                                p.push();
+                                p.translate(tx * 200, ty * 200);
+                                drawCurve(points, baseColor, layer);
+                                p.pop();
+                            }
+                        }
+                        break;
+                        
+                    default:
+                        drawCurve(points, baseColor, layer);
+                }
+            }
+            
+            function drawCurve(points, baseColor, layer) {
+                // Sophisticated stroke styling
+                p.beginShape();
+                
+                points.forEach((point, i) => {
+                    let alpha = p.map(i, 0, points.length, 100, 20);
+                    
+                    // Variable stroke weight
+                    let weight;
+                    switch(traits.strokeStyle) {
+                        case 'delicate':
+                            weight = p.map(i, 0, points.length, 1, 3);
+                            break;
+                        case 'bold':
+                            weight = p.map(p.sin(point.t * 2), -1, 1, 2, 6);
+                            break;
+                        case 'varied':
+                            weight = p.noise(point.t * 0.1, layer) * 5 + 1;
+                            break;
+                    }
+                    
+                    p.strokeWeight(weight * traits.density);
+                    p.stroke(p.red(baseColor), p.green(baseColor), p.blue(baseColor), alpha * traits.density);
+                    
+                    p.vertex(point.x, point.y);
+                });
+                
+                p.endShape();
+            }
+            
+            function drawFlowField() {
+                // Subtle flow field overlay
+                p.push();
+                let spacing = 30 / traits.density;
+                
+                for (let x = 0; x < p.width; x += spacing) {
+                    for (let y = 0; y < p.height; y += spacing) {
+                        let angle = p.noise(x * 0.003, y * 0.003, phase) * p.TWO_PI * 2;
+                        let length = p.noise(x * 0.003 + 100, y * 0.003 + 100, phase) * 15;
+                        
+                        p.push();
+                        p.translate(x, y);
+                        p.rotate(angle);
+                        p.stroke(p.red(palette.accent), p.green(palette.accent), p.blue(palette.accent), 60);
+                        p.strokeWeight(1.5);
+                        p.line(0, 0, length, 0);
+                        p.pop();
+                    }
+                }
+                p.pop();
+            }
+            
+            function drawArtisticText() {
                 p.push();
                 p.translate(p.width/2, p.height/2);
+                
+                // Sophisticated text treatment
                 p.textAlign(p.CENTER, p.CENTER);
-                p.textSize(p.min(p.width, p.height) * 0.3);
-                p.textFont('Courier New');
+                p.textSize(p.min(p.width, p.height) * 0.28);
+                p.textFont('Futura');
                 
-                // Text color contrasts with background
-                let textColor = colorScheme.bg[0] > 128 ? [0, 0, 0] : [255, 255, 255];
-                p.fill(textColor[0], textColor[1], textColor[2]);
-                p.noStroke();
+                // Multiple text layers for depth
+                // Shadow/glow layer
+                for (let i = 5; i > 0; i--) {
+                    p.fill(
+                        p.red(palette.accent), 
+                        p.green(palette.accent), 
+                        p.blue(palette.accent), 
+                        15 * i
+                    );
+                    p.push();
+                    p.scale(1 + i * 0.005);
+                    p.text('no', 0, 0);
+                    p.pop();
+                }
                 
-                // Simple, clean text
+                // Main text
+                if (p.brightness(palette.bg) > 50) {
+                    // Add subtle outline for very light backgrounds
+                    if (p.brightness(palette.bg) > 85) {
+                        p.stroke(20, 20, 30, 30);
+                        p.strokeWeight(1);
+                    } else {
+                        p.noStroke();
+                    }
+                    p.fill(20, 20, 30);
+                } else {
+                    p.noStroke();
+                    p.fill(250, 250, 245);
+                }
                 p.text('no', 0, 0);
                 
                 p.pop();
-                
-                phase += 0.01;
-            };
+            }
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
             
-            p.mousePressed = () => {
-                // Change parameters on click
-                parameters.a = p.random(1, 5);
-                parameters.b = p.random(1, 5);
-                parameters.n = p.floor(p.random(3, 8));
+            p.keyPressed = () => {
+                if (p.key === 's' || p.key === 'S') {
+                    p.save(`harmonic-resonance-${Date.now()}.png`);
+                }
             };
         };
 
@@ -1257,6 +1473,9 @@
             let colorScheme;
             let gridStyle;
             let sunStyle;
+            let showSun;
+            let sunY;
+            let sunSize;
             
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -1302,6 +1521,11 @@
                 gridStyle = p.random(['perspective', 'flat', 'curved', 'infinite']);
                 sunStyle = p.random(['solid', 'gradient', 'stripes', 'glitch']);
                 
+                // Decide once whether to show sun
+                showSun = p.random() > 0.3;
+                sunY = p.height * 0.3;
+                sunSize = p.min(p.width, p.height) * 0.2;
+                
                 // Create stars
                 for (let i = 0; i < 100; i++) {
                     stars.push({
@@ -1325,24 +1549,24 @@
                     p.line(0, y, p.width, y);
                 }
                 
-                // Draw stars
+                // Draw stars with gentle twinkling
                 stars.forEach(star => {
                     p.noStroke();
-                    let alpha = p.sin(p.frameCount * star.twinkle * 0.05) * 127 + 128;
+                    let alpha = p.sin(p.frameCount * star.twinkle * 0.02) * 50 + 180;
                     p.fill(255, 255, 255, alpha);
                     p.ellipse(star.x, star.y, star.size);
                 });
                 
-                // Draw sun/moon
-                if (p.random() > 0.3) {
+                // Draw sun/moon with stable appearance
+                if (showSun) {
                     p.push();
-                    let sunY = p.height * p.random(0.2, 0.4);
-                    let sunSize = p.min(p.width, p.height) * p.random(0.15, 0.25);
                     
+                    // Draw sun based on style (no random selection per frame)
                     switch(sunStyle) {
                         case 'gradient':
-                            for (let i = sunSize; i > 0; i -= 5) {
-                                let alpha = p.map(i, 0, sunSize, 255, 0);
+                            // Smooth gradient sun
+                            for (let i = sunSize; i > 0; i -= 8) {
+                                let alpha = p.map(i, 0, sunSize, 80, 0);
                                 p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2], alpha);
                                 p.noStroke();
                                 p.ellipse(p.width/2, sunY, i);
@@ -1350,6 +1574,7 @@
                             break;
                             
                         case 'stripes':
+                            // Striped sun (static)
                             p.push();
                             p.translate(p.width/2, sunY);
                             p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2]);
@@ -1365,15 +1590,16 @@
                             break;
                             
                         case 'glitch':
+                            // Subtle glitch effect
                             p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2]);
                             p.noStroke();
-                            for (let i = 0; i < 5; i++) {
-                                let offset = p.random(-10, 10);
-                                p.ellipse(p.width/2 + offset, sunY, sunSize);
-                            }
+                            p.ellipse(p.width/2, sunY, sunSize);
+                            p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2], 50);
+                            p.ellipse(p.width/2 + 3, sunY, sunSize);
                             break;
                             
                         default:
+                            // Solid sun
                             p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2]);
                             p.noStroke();
                             p.ellipse(p.width/2, sunY, sunSize);
@@ -1390,14 +1616,15 @@
                         // Horizontal lines
                         for (let y = p.height/2; y < p.height; y += 20) {
                             let perspective = p.map(y, p.height/2, p.height, 0, 1);
-                            p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], 50 * (1 - perspective));
-                            p.line(0, y + gridOffset % 20, p.width, y + gridOffset % 20);
+                            let yOffset = (gridOffset * 0.5) % 20;
+                            p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], 60 * (1 - perspective));
+                            p.line(0, y + yOffset, p.width, y + yOffset);
                         }
                         
                         // Vertical lines with perspective
                         let centerX = p.width/2;
                         for (let x = -30; x <= 30; x++) {
-                            p.stroke(colorScheme.grid2[0], colorScheme.grid2[1], colorScheme.grid2[2], 30);
+                            p.stroke(colorScheme.grid2[0], colorScheme.grid2[1], colorScheme.grid2[2], 40);
                             p.line(
                                 centerX + x * 40, 
                                 p.height/2, 
@@ -1409,23 +1636,23 @@
                         
                     case 'flat':
                         // Simple grid
-                        p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], 40);
-                        for (let x = 0; x < p.width; x += 40) {
+                        p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], 50);
+                        for (let x = 0; x < p.width; x += 60) {
                             p.line(x, p.height/2, x, p.height);
                         }
-                        for (let y = p.height/2; y < p.height; y += 40) {
+                        for (let y = p.height/2; y < p.height; y += 60) {
                             p.line(0, y, p.width, y);
                         }
                         break;
                         
                     case 'curved':
-                        // Curved grid lines
+                        // Curved grid lines (smoother)
                         for (let y = p.height/2; y < p.height; y += 30) {
                             p.noFill();
-                            p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], 40);
+                            p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], 50);
                             p.beginShape();
                             for (let x = 0; x <= p.width; x += 20) {
-                                let curve = p.sin(x * 0.01 + gridOffset * 0.01) * 20;
+                                let curve = p.sin(x * 0.005 + gridOffset * 0.005) * 10;
                                 p.vertex(x, y + curve);
                             }
                             p.endShape();
@@ -1433,11 +1660,13 @@
                         break;
                         
                     case 'infinite':
-                        // Infinite zoom effect
+                        // Infinite zoom effect (smoother)
                         p.translate(p.width/2, p.height * 0.75);
-                        for (let i = 0; i < 20; i++) {
-                            let size = (i + gridOffset * 0.1) % 20 * 50;
-                            p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], p.map(size, 0, 1000, 100, 0));
+                        for (let i = 0; i < 10; i++) {
+                            let size = (i * 120 + gridOffset) % 1200;
+                            let alpha = p.map(size, 0, 1200, 50, 0);
+                            p.stroke(colorScheme.grid[0], colorScheme.grid[1], colorScheme.grid[2], alpha);
+                            p.strokeWeight(1.5);
                             p.noFill();
                             p.rect(-size/2, -size/4, size, size/2);
                         }
@@ -1452,11 +1681,11 @@
                 p.textSize(p.min(p.width, p.height) * 0.4);
                 p.textFont('Arial Black');
                 
-                // Multiple glow layers
-                for (let i = 4; i > 0; i--) {
-                    let alpha = p.map(i, 0, 4, 255, 50);
-                    let blur = p.map(i, 0, 4, 0, 20);
-                    p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2], alpha/3);
+                // Stable glow layers
+                for (let i = 3; i > 0; i--) {
+                    let alpha = p.map(i, 0, 3, 60, 20);
+                    let blur = p.map(i, 0, 3, 0, 12);
+                    p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2], alpha);
                     p.noStroke();
                     p.drawingContext.shadowBlur = blur;
                     p.drawingContext.shadowColor = `rgb(${colorScheme.glow[0]}, ${colorScheme.glow[1]}, ${colorScheme.glow[2]})`;
@@ -1466,7 +1695,7 @@
                 // Main text
                 p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2]);
                 p.noStroke();
-                p.drawingContext.shadowBlur = 20;
+                p.drawingContext.shadowBlur = 18;
                 p.drawingContext.shadowColor = `rgb(${colorScheme.glow[0]}, ${colorScheme.glow[1]}, ${colorScheme.glow[2]})`;
                 p.text('no', 0, 0);
                 
@@ -1477,23 +1706,21 @@
                 p.text('no', 0, 0);
                 
                 // Subtle scanlines
-                if (p.random() > 0.7) {
-                    p.stroke(0, 30);
-                    let fontSize = p.min(p.width, p.height) * 0.4;
-                    for (let y = -fontSize/2; y < fontSize/2; y += 3) {
-                        p.line(-fontSize, y, fontSize, y);
-                    }
+                p.stroke(0, 10);
+                let fontSize = p.min(p.width, p.height) * 0.4;
+                for (let y = -fontSize/2; y < fontSize/2; y += 6) {
+                    p.line(-fontSize, y, fontSize, y);
                 }
                 
                 p.pop();
                 
-                // Random glitch effects
-                if (p.random() > 0.95) {
+                // Gentle glitch effects
+                if (p.random() > 0.99) {
                     p.fill(colorScheme.text[0], colorScheme.text[1], colorScheme.text[2], 20);
-                    p.rect(0, p.random(p.height), p.width, p.random(2, 20));
+                    p.rect(0, p.random(p.height), p.width, 2);
                 }
                 
-                gridOffset += 1;
+                gridOffset += 0.5;
             };
 
             p.windowResized = () => {
@@ -1501,13 +1728,13 @@
             };
             
             p.mousePressed = () => {
-                // Create explosion effect
-                for (let i = 0; i < 20; i++) {
+                // Gentle interaction - just add a few stars
+                for (let i = 0; i < 5; i++) {
                     stars.push({
-                        x: p.mouseX + p.random(-50, 50),
-                        y: p.mouseY + p.random(-50, 50),
-                        size: p.random(1, 3),
-                        twinkle: p.random(0.5, 2)
+                        x: p.mouseX + p.random(-20, 20),
+                        y: p.mouseY + p.random(-20, 20),
+                        size: p.random(0.5, 1.5),
+                        twinkle: p.random(0.5, 1)
                     });
                 }
             };
